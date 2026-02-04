@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📻Bohol Radio Monitor</title>
+  <style>
+    #player-container {
+      width: 360px;
+      font-family: sans-serif;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #container {
+      display: flex;
+      height: 100%;
+      font-family: sans-serif;
+    }
+
+    #thumbnail-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #thumbnail {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    #track-title {
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #progress, #volume {
+      width: 100%;
+    }
+
+    #time {
+      font-size: 0.9em;
+      text-align: right;
+      width: 100%;
+    }
+
+    button {
+      padding: 5px 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .nav-btn {
+      font-size: 20px;
+      padding: 5px 12px;
+    }
+
+    iframe {
+      width: 100%;
+      height: 500px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="container">
+    <span id="player-container">
+      <div id="track-title"></div>
+    
+      <div id="thumbnail-container">
+        <button class="nav-btn" id="prev-btn">⏮️</button>
+        <img id="thumbnail" src="" alt="Album Art">
+        <button class="nav-btn" id="next-btn">⏭️</button>
+      </div>
+    
+      <audio id="audio" preload="metadata"></audio>
+    
+      <div id="controls">
+        <button id="rewind-btn">⏪ 3s</button>
+        <button id="play-btn">▶️</button>
+        <button id="forward-btn">3s ⏩</button>
+      </div>
+    
+      <input type="range" id="progress" value="0" min="0" max="100">
+      <div id="time">0:00 / 0:00</div>
+    
+      <label for="volume">Volume</label>
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+    </span>
+    <span id="radioinfo">
+      <h1>Bohol Radio Monitor</h1>
+      <h1 id="datetime"></h1>
+      <a id="website"></a>
+	  <a id="debuginfo"></a>
+	  <div >Now playing:</div>
+	  <div id="nowplaying"></div>
+
+    </span>
+
+  </div>
+<br>
+<iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQIxq0Ed4RGYKPnt1U7G7BxKyP2gSLNXcMk6LdbAWBUxLEI8fd9lO-9ItBe14vqJw/pubhtml?widget=true&amp;headers=false"></iframe>
+
+<script>
+
+
+  const audio = document.getElementById('audio');
+  const playBtn = document.getElementById('play-btn');
+  const progress = document.getElementById('progress');
+  const volume = document.getElementById('volume');
+  const timeDisplay = document.getElementById('time');
+  const forwardBtn = document.getElementById('forward-btn');
+  const rewindBtn = document.getElementById('rewind-btn');
+  const trackTitle = document.getElementById('track-title');
+  const thumbnail = document.getElementById('thumbnail');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const website = document.getElementById('website');
+  const debuginfo = document.getElementById('debuginfo');
+
+  const tracks = [
+    {
+      title: "KISS 102.3 FM",
+      src: "http://live.kiss102fmbohol.com:8000/kiss",
+	  debug: "http://live.kiss102fmbohol.com:8000",
+      thumb: "kissfm_logo.jpg",
+      website: "http://kiss102fmbohol.com"
+    },
+    {
+      title: "Vibe 105.5 FM",
+      src: "http://119.93.156.186:8001/stream",
+	  debug: "http://119.93.156.186:8001",
+      thumb: "vibefm_logo.jpg",
+      website: "https://vibe1055fmbohol.com"
+    },
+    {
+      title: "Anchor 106.9 FM",
+      src: "http://stream.radiojar.com/8bfc8a9t3gruv",
+      thumb: "anchorradio_logo.jpg",
+      website: "https://baptistbohol.org"
+    },
+    {
+      title: "91.1 Balita FM",
+      src: "https://s20.reliastream.com:8024/stream",
+	  debug: "https://s20.reliastream.com:8024",
+      thumb: "91.1fm.png",
+      website: "https://911balitafmbohol.my.canva.site/91-1-balita-fm-bohol"
+    },
+	{
+      title: "Bee 92.7 FM",
+      src: "https://cast3.asurahosting.com/proxy/victorjr/bee927fmbohol",
+	  debug: "https://cast3.asurahosting.com/proxy/victorjr",
+      thumb: "bee92.7.jpg",
+      website: "https://bee927fmbohol.com"
+    },
+	{
+      title: "unknownvalue",
+      src: "http://live.kiss102fmbohol.com:8000/unknownvalue",
+	  debug: "http://live.kiss102fmbohol.com:8000",
+      thumb: "questionmark.png",
+      website: "http://kiss102fmbohol.com"
+    },
+		{
+      title: "localunknownvalue",
+      src: "http://localhost:8000/unknownvalue",
+	  debug: "http://localhost:8000",
+      thumb: "questionmark.png",
+      website: "http://localhost"
+    },
+  ];
+
+  let currentTrackIndex = 0;
+
+  function updateDateTime() {
+    const now = new Date();
+    const formatted = now.toLocaleString();
+    document.getElementById('datetime').textContent = "Date and time: "+ formatted;
+  }
+
+  updateDateTime(); // Initial call
+  setInterval(updateDateTime, 1000); // Update every second
+
+  function loadTrack(index) {
+    const track = tracks[index];
+    audio.src = track.src;
+    trackTitle.textContent = track.title;
+    website.textContent = track.website;
+    website.src = track.website;
+	debuginfo.textContent= track.debug;
+    thumbnail.src = track.thumb;
+    playBtn.textContent = '▶️';
+    progress.value = 0;
+    timeDisplay.textContent = '0:00 / 0:00';
+    audio.load();
+  }
+
+  // Load initial track
+  loadTrack(currentTrackIndex);
+
+  // Navigation
+  prevBtn.addEventListener('click', () => {
+    currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+    loadTrack(currentTrackIndex);
+  });
+
+  nextBtn.addEventListener('click', () => {
+    currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+    loadTrack(currentTrackIndex);
+  });
+
+  // Play/Pause
+  playBtn.addEventListener('click', () => {
+    if (audio.paused) {
+      audio.play();
+      playBtn.textContent = '⏸️';
+    } else {
+      audio.pause();
+      playBtn.textContent = '▶️';
+    }
+  });
+
+  // Seek
+  forwardBtn.addEventListener('click', () => {
+    audio.currentTime = Math.min(audio.duration, audio.currentTime + 3);
+  });
+
+  rewindBtn.addEventListener('click', () => {
+    audio.currentTime = Math.max(0, audio.currentTime - 3);
+  });
+
+  progress.addEventListener('input', () => {
+    audio.currentTime = (progress.value / 100) * audio.duration;
+  });
+
+  // Volume
+  volume.addEventListener('input', () => {
+    audio.volume = volume.value;
+  });
+
+  // Time display
+  audio.addEventListener('timeupdate', () => {
+    progress.value = (audio.currentTime / audio.duration) * 100;
+    timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+  });
+
+  audio.addEventListener('loadedmetadata', () => {
+    timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+  });
+
+  function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  }
+  
+  //updates whats playing
+  function updateNowPlaying() {
+	stream_link = audio.src;
+	
+	  const params = new URLSearchParams({
+		stream: stream_link,
+		ts: Date.now() // cache-buster
+	  });
+
+	  fetch("nowplaying.php?" + params.toString())
+		.then(res => res.text())
+		.then(text => {
+		  document.getElementById("nowplaying").textContent = text || "No metadata";
+		})
+		.catch(() => {
+		  document.getElementById("nowplaying").textContent = "Offline";
+		});
+  }
+
+	updateNowPlaying();
+	setInterval(updateNowPlaying, 2000);
+</script>
+
+</body>
+</html>
